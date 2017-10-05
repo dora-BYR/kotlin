@@ -3945,6 +3945,9 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
 
     @Override
     public StackValue visitThisExpression(@NotNull KtThisExpression expression, StackValue receiver) {
+        if (expression instanceof KtImplicitThisExpression) {
+            return generateExtensionReceiver(((KtImplicitThisExpression) expression).getDescriptor());
+        }
         DeclarationDescriptor descriptor = bindingContext.get(REFERENCE_TARGET, expression.getInstanceReference());
         if (descriptor instanceof ClassDescriptor) {
             //TODO rewrite with context.lookupInContext()

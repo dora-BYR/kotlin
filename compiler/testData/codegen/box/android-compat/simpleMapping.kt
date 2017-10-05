@@ -100,5 +100,6 @@ fun box(): String {
     if (!View().differentReturnType()) return "FAIL differentReturnType"
     if (!View().subtypeParam("")) return "FAIL subtypeParam"
     if (!View().multipleParams(0, 0L, .0, "", ' ')) return "FAIL subtypeParam"
+    if (!View().run { noArgs() }) return "FAIL run { noArgs() }"
     return "OK"
 }

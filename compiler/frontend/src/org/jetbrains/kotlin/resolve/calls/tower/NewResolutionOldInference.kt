@@ -19,10 +19,7 @@ package org.jetbrains.kotlin.resolve.calls.tower
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.synthetic.SyntheticMemberDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -31,8 +28,7 @@ import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.Call
-import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DeprecationResolver
 import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
@@ -196,8 +192,8 @@ class NewResolutionOldInference(
         if (originType != null && !KotlinTypeChecker.DEFAULT.equalTypes(originType, candidate.valueParameters[0].type)) return false
         for (i in call.valueParameters.indices) {
             val j = if (originType != null) i + 1 else i
-            // Check for sam adapters
             if (KotlinTypeChecker.DEFAULT.equalTypes(candidate.valueParameters[j].type, call.valueParameters[i].type)) continue
+            // Check for sam adapters
             if (call.valueParameters[i].type.isFunctionType) {
                 val synthetics = syntheticScopes.scopes.flatMap {
                     if (receiverType == null) it.getSyntheticStaticFunctions(scope)
@@ -213,6 +209,8 @@ class NewResolutionOldInference(
         }
         return true
     }
+
+    private fun KtPsiFactory.createImplicitThisExpression(descriptor: CallableDescriptor) = KtImplicitThisExpression(createThisExpression().node, descriptor)
 
     private fun replaceWithCompatCallIfNeeded(candidates: Collection<MyCandidate>): Collection<MyCandidate> {
         val compatCandidates = arrayListOf<CompatCandidate>()
@@ -231,7 +229,6 @@ class NewResolutionOldInference(
             val resolvedCall = compatCandidate.candidate.resolvedCall
             val callDescriptor = resolvedCall.candidateDescriptor ?: continue
             val receiver = resolvedCall.dispatchReceiver ?: continue
-            val receiverExpr = (receiver as? ExpressionReceiver)?.expression ?: continue
 
             // Find appropriate compat class/method and replace the call
             for ((origin, compat) in compatCandidate.compatClasses) {
@@ -248,14 +245,22 @@ class NewResolutionOldInference(
                 if (compatMethod == null) continue
 
                 // Replace the call
-                // TODO: Hack
+                val psiFactory = KtPsiFactory(resolvedCall.call.callElement, markGenerated = false)
+                val calleeExpression = psiFactory.createSimpleName(callDescriptor.name.asString())
+
+                val receiverExpr: KtExpression
+                if (receiver is ExpressionReceiver) {
+                    receiverExpr = receiver.expression
+                } else {
+                    val desc = (receiver as? ImplicitReceiver)?.declarationDescriptor as? CallableDescriptor ?: continue
+                    receiverExpr = psiFactory.createImplicitThisExpression(desc)
+                }
                 val originValue = CallMaker.makeValueArgument(receiverExpr)
                 val compatCall = CallMaker.makeCall(
                         resolvedCall.call.callElement,
                         null,
                         resolvedCall.call.callOperationNode,
-                        // TODO: Change callee expression to appropriate one
-                        resolvedCall.call.calleeExpression,
+                        calleeExpression,
                         listOf(originValue) + resolvedCall.call.valueArguments
                 )
                 val compatResolverCall = ResolvedCallImpl(
@@ -273,6 +278,7 @@ class NewResolutionOldInference(
                 resolvedCall.valueArguments.forEach {
                     compatResolverCall.recordValueArgument(compatMethod!!.valueParameters[it.key.index + 1], it.value)
                 }
+                // TODO: Hack
                 compatResolverCall.setStatusToSuccess()
                 callsToReplace[compatCandidate.candidate] = MyCandidate(compatCandidate.candidate.diagnostics, compatResolverCall)
             }
