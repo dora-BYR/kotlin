@@ -155,7 +155,7 @@ class NewResolutionOldInference(
     )
 
     private fun findCompatAnnotationOnType(t: KotlinType) =
-            t.constructor.declarationDescriptor?.annotations?.firstOrNull { it.fqName == FqName("Compat") }
+            t.constructor.declarationDescriptor?.annotations?.firstOrNull { it.fqName == FqName("kotlin.android.Compat") }
 
     // Find all compat annotations on the type and its supertypes
     private fun findCompatAnnotations(type: KotlinType): Map<KotlinType, AnnotationDescriptor> {

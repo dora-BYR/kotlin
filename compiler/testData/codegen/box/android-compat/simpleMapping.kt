@@ -1,15 +1,9 @@
 // IGNORE_BACKEND: JS, NATIVE
 
-// FILE: Compat.java
-import java.lang.annotation.*;
-
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.CLASS)
-public @interface Compat {
-    Class value();
-}
-
+// WITH_RUNTIME
 // FILE: View.java
+import kotlin.android.Compat;
+
 @Compat(ViewCompat.class)
 public class View {
     public boolean noArgs() { return false; }
@@ -29,6 +23,8 @@ public class View {
 }
 
 // FILE: SubView.java
+import kotlin.android.Compat;
+
 @Compat(SubViewCompat.class)
 public class SubView extends View {
     @Override public boolean subtypeOverride() { return false; } // todo: do we need to compat this?
@@ -36,6 +32,8 @@ public class SubView extends View {
 }
 
 // FILE: AnotherView.java
+import kotlin.android.Compat;
+
 @Compat(ViewCompat.class)
 public class AnotherView {
     public boolean inAnotherView() { return false; }
@@ -66,6 +64,8 @@ public class SubViewCompat {
 }
 
 // FILE: Movable.java
+import kotlin.android.Compat;
+
 @Compat(MovableCompat.class)
 public interface Movable {
     boolean move();
