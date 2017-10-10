@@ -211,6 +211,7 @@ class NewResolutionOldInference(
     }
 
     private fun KtPsiFactory.createImplicitThisExpression(descriptor: CallableDescriptor) = KtImplicitThisExpression(createThisExpression().node, descriptor)
+    private fun KtPsiFactory.createImplicitThisExpression(descriptor: ClassDescriptor) = KtImplicitThisExpression(createThisExpression().node, descriptor)
 
     private fun replaceWithCompatCallIfNeeded(candidates: Collection<MyCandidate>): Collection<MyCandidate> {
         val compatCandidates = arrayListOf<CompatCandidate>()
@@ -248,12 +249,15 @@ class NewResolutionOldInference(
                 val psiFactory = KtPsiFactory(resolvedCall.call.callElement, markGenerated = false)
                 val calleeExpression = psiFactory.createSimpleName(callDescriptor.name.asString())
 
-                val receiverExpr: KtExpression
-                if (receiver is ExpressionReceiver) {
-                    receiverExpr = receiver.expression
-                } else {
-                    val desc = (receiver as? ImplicitReceiver)?.declarationDescriptor as? CallableDescriptor ?: continue
-                    receiverExpr = psiFactory.createImplicitThisExpression(desc)
+                val receiverExpr: KtExpression =
+                if (receiver is ExpressionReceiver) receiver.expression
+                else {
+                    val implicitThisDescriptor = (receiver as? ImplicitReceiver)?.declarationDescriptor ?: continue
+                    when(implicitThisDescriptor) {
+                        is CallableDescriptor -> psiFactory.createImplicitThisExpression(implicitThisDescriptor)
+                        is ClassDescriptor -> psiFactory.createImplicitThisExpression(implicitThisDescriptor)
+                        else -> throw IllegalStateException("Implicit this might be either class or closure")
+                    }
                 }
                 val originValue = CallMaker.makeValueArgument(receiverExpr)
                 val compatCall = CallMaker.makeCall(

@@ -3946,7 +3946,10 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
     @Override
     public StackValue visitThisExpression(@NotNull KtThisExpression expression, StackValue receiver) {
         if (expression instanceof KtImplicitThisExpression) {
-            return generateExtensionReceiver(((KtImplicitThisExpression) expression).getDescriptor());
+            KtImplicitThisExpression expr = ((KtImplicitThisExpression) expression);
+            if (expr.getCallableDescriptor() != null) return generateExtensionReceiver(expr.getCallableDescriptor());
+            if (expr.getClassDescriptor() != null) return StackValue.thisOrOuter(this, expr.getClassDescriptor(), false, true);
+            else throw new IllegalStateException("Implicit this might be either class or closure");
         }
         DeclarationDescriptor descriptor = bindingContext.get(REFERENCE_TARGET, expression.getInstanceReference());
         if (descriptor instanceof ClassDescriptor) {

@@ -18,5 +18,15 @@ package org.jetbrains.kotlin.psi
 
 import com.intellij.lang.ASTNode
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 
-class KtImplicitThisExpression(astNode: ASTNode, val descriptor: CallableDescriptor): KtThisExpression(astNode)
+class KtImplicitThisExpression private constructor(astNode: ASTNode): KtThisExpression(astNode) {
+    var callableDescriptor: CallableDescriptor? = null
+    var classDescriptor: ClassDescriptor? = null
+    constructor(astNode: ASTNode, callableDescriptor: CallableDescriptor): this(astNode) {
+        this.callableDescriptor = callableDescriptor
+    }
+    constructor(astNode: ASTNode, classDescriptor: ClassDescriptor): this(astNode) {
+        this.classDescriptor = classDescriptor
+    }
+}

@@ -11,6 +11,11 @@
     <option name="errors">
       <ArgumentParseErrors />
     </option>
+    <option name="freeArgs">
+      <list>
+        <option value="$PROJECT_DIR$/libraries/stdlib/js/build/builtin-sources:/home/user/work/kotlin/js/js.libraries/src:/home/user/work/kotlin/libraries/stdlib/js/build/common-sources" />
+      </list>
+    </option>
   </component>
   <component name="KotlinCompilerSettings">
     <option name="additionalArguments" value="-version -Xallow-kotlin-package -Xskip-metadata-version-check" />

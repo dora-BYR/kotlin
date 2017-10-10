@@ -20,6 +20,7 @@ public class View {
     public boolean differentReturnType() { return true; }
     public boolean subtypeParam(String s) { return true; }
     public boolean multipleParams(int i, long l, double d, String s, char c) { return false; }
+    public boolean implicitThisInSubtype() { return false; }
 }
 
 // FILE: SubView.java
@@ -39,6 +40,11 @@ public class AnotherView {
     public boolean inAnotherView() { return false; }
 }
 
+// FILE: KtSubView.kt
+class KtSubView: View() {
+    fun useImplicitThis() = implicitThisInSubtype()
+}
+
 // FILE: ViewCompat.java
 public class ViewCompat {
     static public boolean noArgs(View v) { return true; }
@@ -56,6 +62,7 @@ public class ViewCompat {
     static public int differentReturnType(View v) { return 0; }
     static public boolean subtypeParam(View v, Object s) { return false; }
     static public boolean multipleParams(View v, int i, long l, double d, String s, char c) { return true; }
+    static public boolean implicitThisInSubtype(View v) { return true; }
 }
 
 // FILE: SubViewCompat.java
@@ -101,5 +108,6 @@ fun box(): String {
     if (!View().subtypeParam("")) return "FAIL subtypeParam"
     if (!View().multipleParams(0, 0L, .0, "", ' ')) return "FAIL subtypeParam"
     if (!View().run { noArgs() }) return "FAIL run { noArgs() }"
+    if (!KtSubView().useImplicitThis()) return "FAIL useImplicitThis"
     return "OK"
 }
