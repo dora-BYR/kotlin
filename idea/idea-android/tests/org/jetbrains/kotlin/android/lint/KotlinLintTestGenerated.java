@@ -66,6 +66,12 @@ public class KotlinLintTestGenerated extends AbstractKotlinLintTest {
         doTest(fileName);
     }
 
+    @TestMetadata("compat.kt")
+    public void testCompat() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/compat.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("findViewById.kt")
     public void testFindViewById() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/findViewById.kt");
