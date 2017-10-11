@@ -8,4 +8,6 @@ import kotlin.android.Compat;
 public class Compatible {
     @TargetApi(100)
     public void noArgs() {}
+    @TargetApi(100)
+    public void shouldFail() {}
 }

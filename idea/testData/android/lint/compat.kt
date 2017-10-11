@@ -9,7 +9,14 @@
 import compatible.Compatible
 import compatible.support.CompatibleCompat
 
+class SubCompatible: Compatible() {
+    fun implicitThis() {
+        noArgs()
+    }
+}
+
 fun test() {
     // OK
     Compatible().noArgs()
+    Compatible().<error descr="Call requires API level 100 (current min is 1): compatible.Compatible#shouldFail">shouldFail</error>()
 }
