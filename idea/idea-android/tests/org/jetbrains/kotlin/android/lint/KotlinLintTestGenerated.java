@@ -66,12 +66,6 @@ public class KotlinLintTestGenerated extends AbstractKotlinLintTest {
         doTest(fileName);
     }
 
-    @TestMetadata("compat.kt")
-    public void testCompat() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/compat.kt");
-        doTest(fileName);
-    }
-
     @TestMetadata("findViewById.kt")
     public void testFindViewById() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/findViewById.kt");
@@ -208,5 +202,20 @@ public class KotlinLintTestGenerated extends AbstractKotlinLintTest {
     public void testWrongViewCall() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/wrongViewCall.kt");
         doTest(fileName);
+    }
+
+    @TestMetadata("idea/testData/android/lint/compat")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class Compat extends AbstractKotlinLintTest {
+        public void testAllFilesPresentInCompat() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/android/lint/compat"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+        }
+
+        @TestMetadata("compat.kt")
+        public void testCompat() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/android/lint/compat/compat.kt");
+            doTest(fileName);
+        }
     }
 }

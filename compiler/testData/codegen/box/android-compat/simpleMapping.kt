@@ -30,6 +30,7 @@ import kotlin.android.Compat;
 public class SubView extends View {
     @Override public boolean subtypeOverride() { return false; } // todo: do we need to compat this?
     public boolean superInCompat() { return true; }
+    public boolean implicitThisNotReplaced() { return !noArgs(); }
 }
 
 // FILE: AnotherView.java
@@ -109,5 +110,6 @@ fun box(): String {
     if (!View().multipleParams(0, 0L, .0, "", ' ')) return "FAIL subtypeParam"
     if (!View().run { noArgs() }) return "FAIL run { noArgs() }"
     if (!KtSubView().useImplicitThis()) return "FAIL useImplicitThis"
+    if (!SubView().implicitThisNotReplaced()) return "FAIL implicitThisNotReplaced"
     return "OK"
 }

@@ -5,9 +5,7 @@ import compatible.support.CompatibleCompat;
 import kotlin.android.Compat;
 
 @Compat(CompatibleCompat.class)
-public class Compatible {
+public class AnotherCompatible {
     @TargetApi(100)
-    public void noArgs() {}
-    @TargetApi(100)
-    public void shouldFail() {}
+    public boolean inAnotherCompatible() { return false; }
 }
