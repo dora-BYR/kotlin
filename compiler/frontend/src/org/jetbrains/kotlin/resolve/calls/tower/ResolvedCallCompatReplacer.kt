@@ -72,12 +72,14 @@ internal class ResolverCallCompatReplacerStub : ResolvedCallCompatReplacer() {
     }
 }
 
+// All classes and interfaces, annotated with @Compat mapped to their compat companions
+typealias OriginToCompatMap = Map<ClassDescriptor, ClassDescriptor>
+
 internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
     private class CompatCandidate(
             // Call candidate to check
             val candidate: NewResolutionOldInference.MyCandidate,
-            // All classes and interfaces, annotated with @Compat mapped to their compat companions
-            val compatClasses: Map<ClassDescriptor, SimpleType>
+            val compatClasses: OriginToCompatMap
     )
 
     private fun findCompatAnnotationOnType(t: KotlinType): AnnotationDescriptor? =
@@ -97,10 +99,12 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
     }
 
     // Find all compat classes of the type and its supertypes including interfaces
-    private fun findCompatClasses(origin: ClassDescriptor): Map<ClassDescriptor, SimpleType> {
-        val res = hashMapOf<ClassDescriptor, SimpleType>()
+    private fun findCompatClasses(origin: ClassDescriptor): OriginToCompatMap {
+        val res = hashMapOf<ClassDescriptor, ClassDescriptor>()
         for ((t, annotation) in findCompatAnnotations(origin)) {
-            res[t] = annotation.argumentValue("value") as? SimpleType ?: continue
+            val annotationValue = annotation.argumentValue("value") ?: throw IllegalStateException("Compat annotation must have value")
+            val compatType = annotationValue as? SimpleType ?: throw IllegalStateException("$annotationValue must be class")
+            res[t] = compatType.constructor.declarationDescriptor as? ClassDescriptor ?: throw IllegalStateException("Compat must be a class")
         }
         return res
     }
@@ -163,14 +167,21 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
 
             // Find appropriate compat class/method and replace the call
             for ((origin, compat) in compatCandidate.compatClasses) {
-                val scope = (compat.constructor.declarationDescriptor as? JavaClassDescriptor)?.staticScope ?: continue
                 var compatMethod: CallableDescriptor? = null
                 // Find method in compat class
-                for (compatMethodDescriptor in scope.getDescriptorsFiltered { it == callDescriptor.name }) {
+                for (compatMethodDescriptor in compat.staticScope.getDescriptorsFiltered { it == callDescriptor.name }) {
                     if (compatMethodDescriptor !is JavaMethodDescriptor) continue
-                    if (!functionSignaturesEqual(callDescriptor, compatMethodDescriptor, scope, syntheticScopes, origin.defaultType, receiver.type)) continue
-                    compatMethod = syntheticScopes.scopes.flatMap { it.getSyntheticStaticFunctions(scope) }.firstOrNull {
-                        functionSignaturesEqual(callDescriptor, it, scope, syntheticScopes, origin.defaultType)
+                    val equalMethods = functionSignaturesEqual(
+                            callDescriptor,
+                            compatMethodDescriptor,
+                            compat.staticScope,
+                            syntheticScopes,
+                            origin.defaultType,
+                            receiver.type
+                    )
+                    if (!equalMethods) continue
+                    compatMethod = syntheticScopes.scopes.flatMap { it.getSyntheticStaticFunctions(compat.staticScope) }.firstOrNull {
+                        functionSignaturesEqual(callDescriptor, it, compat.staticScope, syntheticScopes, origin.defaultType)
                     } ?: compatMethodDescriptor
                 }
                 if (compatMethod == null) continue
