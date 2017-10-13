@@ -77,27 +77,29 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
             // Call candidate to check
             val candidate: NewResolutionOldInference.MyCandidate,
             // All classes and interfaces, annotated with @Compat mapped to their compat companions
-            val compatClasses: Map<KotlinType, SimpleType>
+            val compatClasses: Map<ClassDescriptor, SimpleType>
     )
 
     private fun findCompatAnnotationOnType(t: KotlinType): AnnotationDescriptor? =
             t.constructor.declarationDescriptor?.annotations?.firstOrNull { it.fqName == FqName(ANNOTATION_NAME) }
 
     // Find all compat annotations on the type and its supertypes
-    private fun findCompatAnnotations(type: KotlinType): Map<KotlinType, AnnotationDescriptor> {
+    private fun findCompatAnnotations(origin: ClassDescriptor): HashMap<ClassDescriptor, AnnotationDescriptor> {
+        val type = origin.defaultType
         val allTypes = type.supertypes() + type
-        val res = hashMapOf<KotlinType, AnnotationDescriptor>()
+        val res = hashMapOf<ClassDescriptor, AnnotationDescriptor>()
         for (t in allTypes) {
             val annotation = findCompatAnnotationOnType(t)
-            if (annotation != null) res[t] = annotation
+            val cd = t.constructor.declarationDescriptor as? ClassDescriptor ?: throw IllegalStateException("$t must be class or interface")
+            if (annotation != null) res[cd] = annotation
         }
         return res
     }
 
     // Find all compat classes of the type and its supertypes including interfaces
-    private fun findCompatClasses(type: KotlinType): Map<KotlinType, SimpleType> {
-        val res = hashMapOf<KotlinType, SimpleType>()
-        for ((t, annotation) in findCompatAnnotations(type)) {
+    private fun findCompatClasses(origin: ClassDescriptor): Map<ClassDescriptor, SimpleType> {
+        val res = hashMapOf<ClassDescriptor, SimpleType>()
+        for ((t, annotation) in findCompatAnnotations(origin)) {
             res[t] = annotation.argumentValue("value") as? SimpleType ?: continue
         }
         return res
@@ -145,7 +147,8 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
         for (candidate in candidates) {
             val call = candidate.resolvedCall
             val receiver = call.dispatchReceiver ?: continue
-            val compatClasses = findCompatClasses(receiver.type)
+            val receiverDescriptor = receiver.type.constructor.declarationDescriptor as? ClassDescriptor ?: continue
+            val compatClasses = findCompatClasses(receiverDescriptor)
             if (compatClasses.isNotEmpty()) compatCandidates += CompatCandidate(candidate, compatClasses)
         }
         if (compatCandidates.isEmpty()) return candidates
@@ -165,9 +168,9 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
                 // Find method in compat class
                 for (compatMethodDescriptor in scope.getDescriptorsFiltered { it == callDescriptor.name }) {
                     if (compatMethodDescriptor !is JavaMethodDescriptor) continue
-                    if (!functionSignaturesEqual(callDescriptor, compatMethodDescriptor, scope, syntheticScopes, origin, receiver.type)) continue
+                    if (!functionSignaturesEqual(callDescriptor, compatMethodDescriptor, scope, syntheticScopes, origin.defaultType, receiver.type)) continue
                     compatMethod = syntheticScopes.scopes.flatMap { it.getSyntheticStaticFunctions(scope) }.firstOrNull {
-                        functionSignaturesEqual(callDescriptor, it, scope, syntheticScopes, origin)
+                        functionSignaturesEqual(callDescriptor, it, scope, syntheticScopes, origin.defaultType)
                     } ?: compatMethodDescriptor
                 }
                 if (compatMethod == null) continue
@@ -207,7 +210,7 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
                 )
                 compatResolverCall.recordValueArgument(compatMethod.valueParameters.first(), ExpressionValueArgument(originValue))
                 resolvedCall.valueArguments.forEach {
-                    compatResolverCall.recordValueArgument(compatMethod!!.valueParameters[it.key.index + 1], it.value)
+                    compatResolverCall.recordValueArgument(compatMethod.valueParameters[it.key.index + 1], it.value)
                 }
                 // TODO: Hack
                 compatResolverCall.setStatusToSuccess()
