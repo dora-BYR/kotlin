@@ -21,6 +21,7 @@ public class View {
     public boolean subtypeParam(String s) { return true; }
     public boolean multipleParams(int i, long l, double d, String s, char c) { return false; }
     public boolean implicitThisInSubtype() { return false; }
+    public boolean getProperty() { return false; }
 }
 
 // FILE: SubView.java
@@ -64,6 +65,7 @@ public class ViewCompat {
     static public boolean subtypeParam(View v, Object s) { return false; }
     static public boolean multipleParams(View v, int i, long l, double d, String s, char c) { return true; }
     static public boolean implicitThisInSubtype(View v) { return true; }
+    static public boolean getProperty(View v) { return true; }
 }
 
 // FILE: SubViewCompat.java
@@ -111,5 +113,6 @@ fun box(): String {
     if (!View().run { noArgs() }) return "FAIL run { noArgs() }"
     if (!KtSubView().useImplicitThis()) return "FAIL useImplicitThis"
     if (!SubView().implicitThisNotReplaced()) return "FAIL implicitThisNotReplaced"
+//    if (!View().property) return "FAIL property"
     return "OK"
 }
