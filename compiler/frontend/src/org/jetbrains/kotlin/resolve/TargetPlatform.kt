@@ -63,7 +63,7 @@ abstract class TargetPlatform(val platformName: String) {
 
         override val platformConfigurator =
                 object : PlatformConfigurator(
-                        DynamicTypesSettings(), listOf(), listOf(), listOf(), listOf(), listOf(),
+                        DynamicTypesSettings(), listOf(), listOf(), listOf(), listOf(), listOf(), listOf(),
                         IdentifierChecker.Default, OverloadFilter.Default, PlatformToKotlinClassMap.EMPTY, DelegationFilter.Default,
                         OverridesBackwardCompatibilityHelper.Default,
                         DeclarationReturnTypeSanitizer.Default
@@ -111,6 +111,7 @@ private val DEFAULT_CLASSIFIER_USAGE_CHECKERS = listOf(
 abstract class PlatformConfigurator(
         private val dynamicTypesSettings: DynamicTypesSettings,
         additionalDeclarationCheckers: List<DeclarationChecker>,
+        private val additionalLocalVariableCheckers: List<LocalVariableChecker>,
         additionalCallCheckers: List<CallChecker>,
         additionalTypeCheckers: List<AdditionalTypeChecker>,
         additionalClassifierUsageCheckers: List<ClassifierUsageChecker>,
@@ -132,6 +133,7 @@ abstract class PlatformConfigurator(
     val platformSpecificContainer = composeContainer(this::class.java.simpleName) {
         useInstance(dynamicTypesSettings)
         declarationCheckers.forEach { useInstance(it) }
+        additionalLocalVariableCheckers.forEach { useInstance(it) }
         callCheckers.forEach { useInstance(it) }
         typeCheckers.forEach { useInstance(it) }
         classifierUsageCheckers.forEach { useInstance(it) }

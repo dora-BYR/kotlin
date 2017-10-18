@@ -11983,6 +11983,51 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/nullabilityAssertionOnPrivateMemberExtensionReceiver_lv12.kt");
             doTest(fileName);
         }
+
+        @TestMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability")
+        @TestDataPath("$PROJECT_ROOT")
+        @RunWith(JUnit3RunnerWithInners.class)
+        public static class EnhancedNullability extends AbstractLightAnalysisModeTest {
+            public void testAllFilesPresentInEnhancedNullability() throws Exception {
+                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JVM, true);
+            }
+
+            @TestMetadata("inFunctionWithExpressionBody.kt")
+            public void testInFunctionWithExpressionBody() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inFunctionWithExpressionBody.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("inLocalFunctionWithExpressionBody.kt")
+            public void testInLocalFunctionWithExpressionBody() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inLocalFunctionWithExpressionBody.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("inLocalVariableInitializer.kt")
+            public void testInLocalVariableInitializer() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inLocalVariableInitializer.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("inMemberPropertyInitializer.kt")
+            public void testInMemberPropertyInitializer() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inMemberPropertyInitializer.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("inPropertyGetterWithExpressionBody.kt")
+            public void testInPropertyGetterWithExpressionBody() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inPropertyGetterWithExpressionBody.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("inTopLevelPropertyInitializer.kt")
+            public void testInTopLevelPropertyInitializer() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/nullabilityAssertions/enhancedNullability/inTopLevelPropertyInitializer.kt");
+                doTest(fileName);
+            }
+        }
     }
 
     @TestMetadata("compiler/testData/codegen/box/objectIntrinsics")

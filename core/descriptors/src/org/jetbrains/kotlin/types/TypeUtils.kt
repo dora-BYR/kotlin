@@ -201,3 +201,6 @@ fun KotlinType.containsTypeProjectionsInTopLevelArguments(): Boolean {
     val possiblyInnerType = buildPossiblyInnerType() ?: return false
     return possiblyInnerType.arguments.any { it.isStarProjection || it.projectionKind != Variance.INVARIANT }
 }
+
+fun KotlinType.isEffectivelyNullable() =
+        builtIns.nullableNothingType.isSubtypeOf(this)

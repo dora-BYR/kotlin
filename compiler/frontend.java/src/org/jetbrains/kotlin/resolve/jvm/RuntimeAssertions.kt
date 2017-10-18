@@ -18,9 +18,13 @@ package org.jetbrains.kotlin.resolve.jvm
 
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.load.java.typeEnhancement.hasEnhancedNullability
-import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.isSafeCall
 import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
@@ -29,11 +33,14 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
+import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
+import org.jetbrains.kotlin.resolve.checkers.LocalVariableChecker
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.isError
+import org.jetbrains.kotlin.types.typeUtil.isEffectivelyNullable
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class RuntimeAssertionInfo(val needNotNullAssertion: Boolean, val message: String) {
@@ -83,6 +90,9 @@ class RuntimeAssertionInfo(val needNotNullAssertion: Boolean, val message: Strin
     }
 }
 
+private val KtExpression.textForRuntimeAssertionInfo
+    get() = StringUtil.trimMiddle(text, 50)
+
 class RuntimeAssertionsDataFlowExtras(
         private val c: ResolutionContext<*>,
         private val dataFlowValue: DataFlowValue,
@@ -93,7 +103,7 @@ class RuntimeAssertionsDataFlowExtras(
     override val possibleTypes: Set<KotlinType>
         get() = c.dataFlowInfo.getCollectedTypes(dataFlowValue)
     override val presentableText: String
-        get() = StringUtil.trimMiddle(expression.text, 50)
+        get() = expression.textForRuntimeAssertionInfo
 }
 
 object RuntimeAssertionsTypeChecker : AdditionalTypeChecker {
@@ -137,5 +147,96 @@ object RuntimeAssertionsOnExtensionReceiverCallChecker : CallChecker {
         if (assertionInfo != null) {
             c.trace.record(JvmBindingContextSlices.RECEIVER_RUNTIME_ASSERTION_INFO, expressionReceiverValue, assertionInfo)
         }
+    }
+}
+
+object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariableChecker {
+    override fun check(
+            declaration: KtDeclaration,
+            descriptor: DeclarationDescriptor,
+            diagnosticHolder: DiagnosticSink,
+            bindingContext: BindingContext,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        val bindingTrace = diagnosticHolder as? BindingTrace ?: return
+
+        when {
+            declaration is KtFunction && descriptor is FunctionDescriptor ->
+                checkNullabilityAssertionsForFunction(declaration, descriptor, bindingTrace, languageVersionSettings)
+            declaration is KtProperty && descriptor is PropertyDescriptor ->
+                checkNullabilityAssertionsForProperty(declaration, descriptor, bindingTrace, languageVersionSettings)
+            declaration is KtPropertyAccessor && descriptor is PropertyAccessorDescriptor ->
+                checkNullabilityAssertionsForPropertyAccessor(declaration, descriptor, bindingTrace, languageVersionSettings)
+        }
+    }
+
+    override fun checkLocalVariable(
+            declaration: KtProperty,
+            descriptor: VariableDescriptor,
+            bindingTrace: BindingTrace,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        if (declaration.typeReference != null) return
+
+        checkNullabilityAssertion(declaration.initializer ?: return, descriptor.type, bindingTrace, languageVersionSettings)
+    }
+
+    private fun checkNullabilityAssertionsForFunction(
+            declaration: KtFunction,
+            descriptor: FunctionDescriptor,
+            bindingTrace: BindingTrace,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        if (declaration.typeReference != null || declaration.hasBlockBody()) return
+
+        checkNullabilityAssertion(declaration.bodyExpression ?: return, descriptor.returnType ?: return,
+                                  bindingTrace, languageVersionSettings)
+    }
+
+    private fun checkNullabilityAssertionsForProperty(
+            declaration: KtProperty,
+            descriptor: PropertyDescriptor,
+            bindingTrace: BindingTrace,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        if (declaration.typeReference != null) return
+
+        // TODO nullability assertion on delegate initialization expression, see KT-20823
+        if (declaration.hasDelegateExpression()) return
+
+        checkNullabilityAssertion(declaration.initializer ?: return, descriptor.type, bindingTrace, languageVersionSettings)
+    }
+
+    private fun checkNullabilityAssertionsForPropertyAccessor(
+            declaration: KtPropertyAccessor,
+            descriptor: PropertyAccessorDescriptor,
+            bindingTrace: BindingTrace,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        if (declaration.property.typeReference != null || declaration.hasBlockBody()) return
+
+        checkNullabilityAssertion(declaration.bodyExpression ?: return, descriptor.correspondingProperty.type,
+                                  bindingTrace, languageVersionSettings)
+    }
+
+
+    private fun checkNullabilityAssertion(
+            expression: KtExpression,
+            declarationType: KotlinType,
+            bindingTrace: BindingTrace,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
+        if (declarationType.isEffectivelyNullable()) return
+
+        val expressionType = bindingTrace.getType(expression) ?: return
+        if (expressionType.isError) return
+
+        if (!expressionType.hasEnhancedNullability()) return
+
+        bindingTrace.record(
+                JvmBindingContextSlices.RETURN_VALUE_RUNTIME_ASSERTION_INFO,
+                expression,
+                RuntimeAssertionInfo(true, expression.textForRuntimeAssertionInfo)
+        )
     }
 }
