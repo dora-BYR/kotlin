@@ -39,7 +39,8 @@ class VariableTypeAndInitializerResolver(
         private val constantExpressionEvaluator: ConstantExpressionEvaluator,
         private val delegatedPropertyResolver: DelegatedPropertyResolver,
         private val wrappedTypeFactory: WrappedTypeFactory,
-        private val typeApproximator: TypeApproximator
+        private val typeApproximator: TypeApproximator,
+        private val declarationReturnTypeSanitizer: DeclarationReturnTypeSanitizer
 ) {
     companion object {
         @JvmField
@@ -92,6 +93,7 @@ class VariableTypeAndInitializerResolver(
 
                 else -> resolveInitializerType(scopeForInitializer, variable.initializer!!, dataFlowInfo, trace, local)
             }
+
             else -> null
         }
     }
@@ -152,7 +154,9 @@ class VariableTypeAndInitializerResolver(
             trace: BindingTrace,
             local: Boolean
     ): KotlinType {
-        return approximateType(expressionTypingServices.safeGetType(scope, initializer, TypeUtils.NO_EXPECTED_TYPE, dataFlowInfo, trace), local)
+        val inferredType = expressionTypingServices.safeGetType(scope, initializer, TypeUtils.NO_EXPECTED_TYPE, dataFlowInfo, trace)
+        val sanitizedType = declarationReturnTypeSanitizer.sanitizeReturnType(inferredType, wrappedTypeFactory, trace)
+        return approximateType(sanitizedType, local)
     }
 
     private fun approximateType(type: KotlinType, local: Boolean): UnwrappedType = typeApproximator.approximateDeclarationType(type, local)

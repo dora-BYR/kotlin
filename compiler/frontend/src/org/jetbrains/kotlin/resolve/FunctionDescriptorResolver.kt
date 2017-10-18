@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.resolve.source.toSourceElement
 import org.jetbrains.kotlin.types.ErrorUtils
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.WrappedTypeFactory
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingServices
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
@@ -75,7 +76,9 @@ class FunctionDescriptorResolver(
         private val overloadChecker: OverloadChecker,
         private val contractParsingServices: ContractParsingServices,
         private val expressionTypingServices: ExpressionTypingServices,
-        private val languageVersionSettings: LanguageVersionSettings
+        private val languageVersionSettings: LanguageVersionSettings,
+        private val wrappedTypeFactory: WrappedTypeFactory,
+        private val declarationReturnTypeSanitizer: DeclarationReturnTypeSanitizer
 ) {
     fun resolveFunctionDescriptor(
             containingDescriptor: DeclarationDescriptor,
@@ -134,7 +137,7 @@ class FunctionDescriptorResolver(
         assert(function.typeReference == null) {
             "Return type must be initialized early for function: " + function.text + ", at: " + DiagnosticUtils.atLocation(function) }
 
-        val returnType = when {
+        val inferredReturnType = when {
             function.hasBlockBody() ->
                 builtIns.unitType
             function.hasBody() ->
@@ -142,7 +145,7 @@ class FunctionDescriptorResolver(
             else ->
                 ErrorUtils.createErrorType("No type, no body")
         }
-        functionDescriptor.setReturnType(returnType)
+        functionDescriptor.setReturnType(declarationReturnTypeSanitizer.sanitizeReturnType(inferredReturnType, wrappedTypeFactory, trace))
     }
 
     fun initializeFunctionDescriptorAndExplicitReturnType(
