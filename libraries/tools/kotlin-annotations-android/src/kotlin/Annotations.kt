@@ -36,3 +36,10 @@ public annotation class DefaultValue(val value: String)
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.BINARY)
 public annotation class DefaultNull
+
+/**
+ * Define Compat class from support-compat library.
+ */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.BINARY)
+public annotation class Compat(val value: String)

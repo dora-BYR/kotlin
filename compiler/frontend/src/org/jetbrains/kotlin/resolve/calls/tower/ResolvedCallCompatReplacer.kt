@@ -21,9 +21,10 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.synthetic.SyntheticMemberDescriptor
-import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtImplicitThisExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallImpl
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 import org.jetbrains.kotlin.resolve.calls.util.CallMaker
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.SyntheticScopes
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
@@ -83,7 +85,7 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
     )
 
     private fun findCompatAnnotationOnType(t: KotlinType): AnnotationDescriptor? =
-            t.constructor.declarationDescriptor?.annotations?.firstOrNull { it.fqName == FqName(ANNOTATION_NAME) }
+            t.constructor.declarationDescriptor?.annotations?.firstOrNull { it.fqName == annotationFqName }
 
     // Find all compat annotations on the type and its supertypes
     private fun findCompatAnnotations(origin: ClassDescriptor): HashMap<ClassDescriptor, AnnotationDescriptor> {
@@ -99,12 +101,24 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
     }
 
     // Find all compat classes of the type and its supertypes including interfaces
+    // TODO: Replace IllegalStateException with error reporting
     private fun findCompatClasses(origin: ClassDescriptor): OriginToCompatMap {
         val res = hashMapOf<ClassDescriptor, ClassDescriptor>()
         for ((t, annotation) in findCompatAnnotations(origin)) {
             val annotationValue = annotation.argumentValue("value") ?: throw IllegalStateException("Compat annotation must have value")
-            val compatType = annotationValue as? SimpleType ?: throw IllegalStateException("$annotationValue must be class")
-            res[t] = compatType.constructor.declarationDescriptor as? ClassDescriptor ?: throw IllegalStateException("Compat must be a class")
+            val valueString = annotationValue as? String ?: throw IllegalStateException("$annotationValue must be string")
+            var packageName = ""
+            var className = valueString
+            if (valueString.contains('.')) {
+                packageName = valueString.substring(0, valueString.lastIndexOf('.'))
+                className = valueString.substring(valueString.lastIndexOf('.') + 1)
+            }
+            val compatDescriptor = t.module
+                                           .getPackage(FqName(packageName))
+                                           .memberScope
+                                           .getContributedClassifier(Name.identifier(className), NoLookupLocation.WHEN_FIND_BY_FQNAME) as? ClassDescriptor
+                                   ?: throw IllegalStateException("Compat must be a class")
+            res[t] = compatDescriptor
         }
         return res
     }
@@ -240,6 +254,6 @@ internal class ResolverCallCompatReplacerImpl : ResolvedCallCompatReplacer() {
     private fun KtPsiFactory.createImplicitThisExpression(descriptor: ClassDescriptor) = KtImplicitThisExpression(createThisExpression().node, descriptor)
 
     companion object {
-        private const val ANNOTATION_NAME = "kotlin.android.Compat"
+        private val annotationFqName = FqName("kotlin.annotations.jvm.internal.Compat")
     }
 }

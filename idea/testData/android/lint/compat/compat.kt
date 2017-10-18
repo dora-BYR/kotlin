@@ -2,7 +2,6 @@
 // INSPECTION_CLASS: org.jetbrains.android.inspections.klint.AndroidLintInspectionToolProvider$AndroidKLintNewApiInspection
 // INSPECTION_CLASS2: org.jetbrains.android.inspections.klint.AndroidLintInspectionToolProvider$AndroidKLintInlinedApiInspection
 // INSPECTION_CLASS3: org.jetbrains.android.inspections.klint.AndroidLintInspectionToolProvider$AndroidKLintOverrideInspection
-// DEPENDENCY: Compat.java -> kotlin/android/Compat.java
 // DEPENDENCY: Compatible.java -> compatible/Compatible.java
 // DEPENDENCY: SubCompatible.java -> compatible/SubCompatible.java
 // DEPENDENCY: AnotherCompatible.java -> compatible/AnotherCompatible.java

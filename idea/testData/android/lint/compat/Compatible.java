@@ -1,10 +1,8 @@
 package compatible;
 
 import android.annotation.TargetApi;
-import compatible.support.CompatibleCompat;
-import kotlin.android.Compat;
 
-@Compat(CompatibleCompat.class)
+@kotlin.annotations.jvm.internal.Compat("compatible.support.CompatibleCompat")
 public class Compatible {
     @TargetApi(100)
     public void noArgs() {}
