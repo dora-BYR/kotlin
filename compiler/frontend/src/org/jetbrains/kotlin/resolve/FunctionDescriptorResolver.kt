@@ -58,7 +58,6 @@ import org.jetbrains.kotlin.resolve.source.toSourceElement
 import org.jetbrains.kotlin.types.ErrorUtils
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
-import org.jetbrains.kotlin.types.WrappedTypeFactory
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingServices
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
@@ -76,9 +75,7 @@ class FunctionDescriptorResolver(
         private val overloadChecker: OverloadChecker,
         private val contractParsingServices: ContractParsingServices,
         private val expressionTypingServices: ExpressionTypingServices,
-        private val languageVersionSettings: LanguageVersionSettings,
-        private val wrappedTypeFactory: WrappedTypeFactory,
-        private val declarationReturnTypeSanitizer: DeclarationReturnTypeSanitizer
+        private val languageVersionSettings: LanguageVersionSettings
 ) {
     fun resolveFunctionDescriptor(
             containingDescriptor: DeclarationDescriptor,
@@ -145,7 +142,7 @@ class FunctionDescriptorResolver(
             else ->
                 ErrorUtils.createErrorType("No type, no body")
         }
-        functionDescriptor.setReturnType(declarationReturnTypeSanitizer.sanitizeReturnType(inferredReturnType, wrappedTypeFactory, trace))
+        functionDescriptor.setReturnType(inferredReturnType)
     }
 
     fun initializeFunctionDescriptorAndExplicitReturnType(

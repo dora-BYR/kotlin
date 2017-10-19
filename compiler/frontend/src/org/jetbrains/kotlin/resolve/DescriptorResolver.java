@@ -1155,10 +1155,10 @@ public class DescriptorResolver {
     ) {
         return wrappedTypeFactory.createRecursionIntolerantDeferredType(trace, () -> {
             PreliminaryDeclarationVisitor.Companion.createForDeclaration(function, trace, languageVersionSettings);
-            KotlinType type = expressionTypingServices.getBodyExpressionType(
-                    trace, scope, dataFlowInfo, function, functionDescriptor);
-            KotlinType result = transformAnonymousTypeIfNeeded(functionDescriptor, function, type, trace);
-            UnwrappedType approximatedType = typeApproximator.approximateDeclarationType(result, false);
+            KotlinType type = expressionTypingServices.getBodyExpressionType(trace, scope, dataFlowInfo, function, functionDescriptor);
+            KotlinType publicType = transformAnonymousTypeIfNeeded(functionDescriptor, function, type, trace);
+            KotlinType sanitizedType = declarationReturnTypeSanitizer.sanitizeReturnType(publicType, wrappedTypeFactory, trace);
+            UnwrappedType approximatedType = typeApproximator.approximateDeclarationType(sanitizedType, false);
             functionsTypingVisitor.checkTypesForReturnStatements(function, trace, approximatedType);
             return approximatedType;
         });
