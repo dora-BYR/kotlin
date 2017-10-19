@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.resolve.calls.context.ContextDependency
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.calls.util.isSingleUnderscore
-import org.jetbrains.kotlin.resolve.checkers.LocalVariableChecker
 import org.jetbrains.kotlin.resolve.lazy.ForceResolveUtil
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.source.toSourceElement
@@ -49,8 +48,7 @@ class LocalVariableResolver(
         private val annotationResolver: AnnotationResolver,
         private val variableTypeAndInitializerResolver: VariableTypeAndInitializerResolver,
         private val delegatedPropertyResolver: DelegatedPropertyResolver,
-        private val languageVersionSettings: LanguageVersionSettings,
-        private val localVariableCheckers: Iterable<LocalVariableChecker>
+        private val languageVersionSettings: LanguageVersionSettings
 ) {
 
     fun process(
@@ -137,10 +135,6 @@ class LocalVariableResolver(
         identifierChecker.checkDeclaration(ktProperty, context.trace)
 
         LateinitModifierApplicabilityChecker.checkLateinitModifierApplicability(context.trace, ktProperty, descriptor)
-
-        localVariableCheckers.forEach {
-            it.checkLocalVariable(ktProperty, descriptor, context.trace, languageVersionSettings)
-        }
     }
 
     private fun resolveLocalVariableDescriptor(

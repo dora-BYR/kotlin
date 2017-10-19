@@ -20,10 +20,8 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.load.java.typeEnhancement.hasEnhancedNullability
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.isSafeCall
 import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
@@ -33,8 +31,6 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
-import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
-import org.jetbrains.kotlin.resolve.checkers.LocalVariableChecker
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.KotlinType
@@ -150,27 +146,27 @@ object RuntimeAssertionsOnExtensionReceiverCallChecker : CallChecker {
     }
 }
 
-object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariableChecker {
-    override fun check(
+object RuntimeAssertionsOnDeclarationBodyChecker {
+    @JvmStatic
+    fun check(
             declaration: KtDeclaration,
             descriptor: DeclarationDescriptor,
-            diagnosticHolder: DiagnosticSink,
-            bindingContext: BindingContext,
+            bindingTrace: BindingTrace,
             languageVersionSettings: LanguageVersionSettings
     ) {
-        val bindingTrace = diagnosticHolder as? BindingTrace ?: return
-
         when {
+            declaration is KtProperty && descriptor is VariableDescriptor ->
+                checkLocalVariable(declaration, descriptor, bindingTrace, languageVersionSettings)
             declaration is KtFunction && descriptor is FunctionDescriptor ->
-                checkNullabilityAssertionsForFunction(declaration, descriptor, bindingTrace, languageVersionSettings)
+                checkFunction(declaration, descriptor, bindingTrace, languageVersionSettings)
             declaration is KtProperty && descriptor is PropertyDescriptor ->
-                checkNullabilityAssertionsForProperty(declaration, descriptor, bindingTrace, languageVersionSettings)
+                checkProperty(declaration, descriptor, bindingTrace, languageVersionSettings)
             declaration is KtPropertyAccessor && descriptor is PropertyAccessorDescriptor ->
-                checkNullabilityAssertionsForPropertyAccessor(declaration, descriptor, bindingTrace, languageVersionSettings)
+                checkPropertyAccessor(declaration, descriptor, bindingTrace, languageVersionSettings)
         }
     }
 
-    override fun checkLocalVariable(
+    private fun checkLocalVariable(
             declaration: KtProperty,
             descriptor: VariableDescriptor,
             bindingTrace: BindingTrace,
@@ -181,7 +177,7 @@ object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariable
         checkNullabilityAssertion(declaration.initializer ?: return, descriptor.type, bindingTrace, languageVersionSettings)
     }
 
-    private fun checkNullabilityAssertionsForFunction(
+    private fun checkFunction(
             declaration: KtFunction,
             descriptor: FunctionDescriptor,
             bindingTrace: BindingTrace,
@@ -193,7 +189,7 @@ object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariable
                                   bindingTrace, languageVersionSettings)
     }
 
-    private fun checkNullabilityAssertionsForProperty(
+    private fun checkProperty(
             declaration: KtProperty,
             descriptor: PropertyDescriptor,
             bindingTrace: BindingTrace,
@@ -207,7 +203,7 @@ object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariable
         checkNullabilityAssertion(declaration.initializer ?: return, descriptor.type, bindingTrace, languageVersionSettings)
     }
 
-    private fun checkNullabilityAssertionsForPropertyAccessor(
+    private fun checkPropertyAccessor(
             declaration: KtPropertyAccessor,
             descriptor: PropertyAccessorDescriptor,
             bindingTrace: BindingTrace,
@@ -234,7 +230,7 @@ object RuntimeAssertionsOnReturnValueChecker : DeclarationChecker, LocalVariable
         if (!expressionType.hasEnhancedNullability()) return
 
         bindingTrace.record(
-                JvmBindingContextSlices.RETURN_VALUE_RUNTIME_ASSERTION_INFO,
+                JvmBindingContextSlices.BODY_RUNTIME_ASSERTION_INFO,
                 expression,
                 RuntimeAssertionInfo(true, expression.textForRuntimeAssertionInfo)
         )

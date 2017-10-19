@@ -33,7 +33,7 @@ object JvmBindingContextSlices {
     val RECEIVER_RUNTIME_ASSERTION_INFO: WritableSlice<ExpressionReceiver, RuntimeAssertionInfo> = BasicWritableSlice(RewritePolicy.DO_NOTHING)
 
     @JvmField
-    val RETURN_VALUE_RUNTIME_ASSERTION_INFO: WritableSlice<KtExpression, RuntimeAssertionInfo> = BasicWritableSlice(RewritePolicy.DO_NOTHING)
+    val BODY_RUNTIME_ASSERTION_INFO: WritableSlice<KtExpression, RuntimeAssertionInfo> = BasicWritableSlice(RewritePolicy.DO_NOTHING)
 
     @JvmField
     val LOAD_FROM_JAVA_SIGNATURE_ERRORS: WritableSlice<DeclarationDescriptor, List<String>> = Slices.createCollectiveSlice()

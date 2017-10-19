@@ -43,12 +43,7 @@ object JvmPlatformConfigurator : PlatformConfigurator(
                 TypeParameterBoundIsNotArrayChecker(),
                 JvmSyntheticApplicabilityChecker(),
                 StrictfpApplicabilityChecker(),
-                RuntimeAssertionsOnReturnValueChecker,
                 ExpectedActualDeclarationChecker
-        ),
-
-        additionalLocalVariableCheckers = listOf(
-                RuntimeAssertionsOnReturnValueChecker
         ),
 
         additionalCallCheckers = listOf(

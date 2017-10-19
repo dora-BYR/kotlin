@@ -310,7 +310,7 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
                 KtExpression expression = (KtExpression) selector;
                 runtimeAssertionInfo = bindingContext.get(JvmBindingContextSlices.RUNTIME_ASSERTION_INFO, expression);
                 if (runtimeAssertionInfo == null) {
-                    runtimeAssertionInfo = bindingContext.get(JvmBindingContextSlices.RETURN_VALUE_RUNTIME_ASSERTION_INFO, expression);
+                    runtimeAssertionInfo = bindingContext.get(JvmBindingContextSlices.BODY_RUNTIME_ASSERTION_INFO, expression);
                 }
             }
 

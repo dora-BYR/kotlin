@@ -41,7 +41,6 @@ object JsPlatformConfigurator : PlatformConfigurator(
                 JsDynamicDeclarationChecker,
                 ExpectedActualDeclarationChecker
         ),
-        additionalLocalVariableCheckers = listOf(),
         additionalCallCheckers = listOf(
                 ReifiedTypeParameterSubstitutionChecker(),
                 JsModuleCallChecker,
