@@ -26,7 +26,10 @@ import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
 object JvmDeclarationReturnTypeSanitizer : DeclarationReturnTypeSanitizer {
     override fun sanitizeReturnType(inferred: KotlinType, wrappedTypeFactory: WrappedTypeFactory, trace: BindingTrace): KotlinType =
+            // NB this deferred type wrapper is required to avoid recursion in declaration type resolution
             wrappedTypeFactory.createRecursionIntolerantDeferredType(trace) {
+                // NB can't check for presence of EnhancedNullability here,
+                // because it will also cause recursion in declaration type resolution.
                 inferred.replaceAnnotations(FilteredAnnotations(inferred.annotations) {
                     it != JvmAnnotationNames.ENHANCED_NULLABILITY_ANNOTATION
                 })
