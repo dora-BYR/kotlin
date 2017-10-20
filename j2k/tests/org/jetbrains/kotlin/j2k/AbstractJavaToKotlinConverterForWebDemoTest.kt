@@ -23,6 +23,7 @@ import com.intellij.core.CoreApplicationEnvironment
 import com.intellij.core.JavaCoreApplicationEnvironment
 import com.intellij.core.JavaCoreProjectEnvironment
 import com.intellij.lang.MetaLanguage
+import com.intellij.lang.jvm.facade.JvmElementProvider
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.extensions.ExtensionsArea
 import com.intellij.openapi.fileTypes.FileTypeExtensionPoint
@@ -72,6 +73,7 @@ abstract class AbstractJavaToKotlinConverterForWebDemoTest : TestCase() {
                 val projectArea = Extensions.getArea(project)
                 CoreApplicationEnvironment.registerExtensionPoint(projectArea, PsiTreeChangePreprocessor.EP_NAME, PsiTreeChangePreprocessor::class.java)
                 CoreApplicationEnvironment.registerExtensionPoint(projectArea, PsiElementFinder.EP_NAME, PsiElementFinder::class.java)
+                CoreApplicationEnvironment.registerExtensionPoint(projectArea, JvmElementProvider.EP_NAME, JvmElementProvider::class.java)
             }
         }
 
