@@ -1,0 +1,2 @@
+org.jetbrains.kotlin.resolve.jvm.diagnostics.DefaultErrorMessagesJvm
+org.jetbrains.kotlin.js.resolve.diagnostics.DefaultErrorMessagesJs
