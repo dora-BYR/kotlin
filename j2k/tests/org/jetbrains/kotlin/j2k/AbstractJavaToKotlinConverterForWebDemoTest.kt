@@ -29,10 +29,7 @@ import com.intellij.openapi.extensions.ExtensionsArea
 import com.intellij.openapi.fileTypes.FileTypeExtensionPoint
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.psi.FileContextProvider
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementFinder
-import com.intellij.psi.PsiModifierListOwner
+import com.intellij.psi.*
 import com.intellij.psi.augment.PsiAugmentProvider
 import com.intellij.psi.augment.TypeAnnotationModifier
 import com.intellij.psi.compiled.ClassFileDecompilers
@@ -110,6 +107,7 @@ abstract class AbstractJavaToKotlinConverterForWebDemoTest : TestCase() {
 
         CoreApplicationEnvironment.registerExtensionPoint(area, TypeAnnotationModifier.EP_NAME, TypeAnnotationModifier::class.java)
         CoreApplicationEnvironment.registerExtensionPoint(area, MetaLanguage.EP_NAME, MetaLanguage::class.java)
+        CoreApplicationEnvironment.registerExtensionPoint(area, JavaModuleSystem.EP_NAME, JavaModuleSystem::class.java)
     }
 
     fun findAnnotations(): File? {
